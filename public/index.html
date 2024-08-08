@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 
     <style>
         @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Source+Code+Pro&display=swap");
@@ -943,10 +943,7 @@
         let incorrectWords = 0;
         let typedWords = 0;
 
-        const socket = io('https://redlabz-typing.vercel.app', {
-            transports: ['polling'],
-            upgrade: false
-        });
+        const socket = io();
         let testStarted = false;
 
         console.log('Socket connection established');

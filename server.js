@@ -1,32 +1,21 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const socketIo = require('socket.io');
 const path = require('path');
 const { Pool } = require('pg');
-const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-
-// Enable CORS for all routes
-app.use(cors());
-
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-const io = new Server(server, {
+const io = socketIo(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["my-custom-header"],
-    credentials: true
-  },
-  transports: ['polling', 'websocket']
+    methods: ["GET", "POST"]
+  }
 });
 
 // PostgreSQL connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:ZokvN2OwM5HD@ep-autumn-scene-a1izhr9p.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+  connectionString: 'postgresql://neondb_owner:ZokvN2OwM5HD@ep-autumn-scene-a1izhr9p.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 });
 
 // Create table if not exists
@@ -51,6 +40,9 @@ app.use((req, res, next) => {
   console.log(`Request received: ${req.method} ${req.url}`);
   next();
 });
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.get('/', (req, res) => {
@@ -104,18 +96,18 @@ io.on('connection', (socket) => {
   });
 
  socket.on('startTest', (data) => {
-    console.log('Received startTest event with data:', data);
-    if (data && data.paragraph && data.duration) {
-        console.log('Emitting testStarted event with data:', data);
-        io.emit('testStarted', {
-            paragraph: data.paragraph,
-            duration: parseInt(data.duration)
-        });
-    } else {
-        console.error('Invalid data received from admin:', data);
-        socket.emit('error', { message: 'Invalid test data' });
-    }
- });
+        console.log('Received startTest event with data:', data);
+        if (data && data.paragraph && data.duration) {
+            console.log('Emitting testStarted event with data:', data);
+            io.emit('testStarted', {
+                paragraph: data.paragraph,
+                duration: parseInt(data.duration)
+            });
+        } else {
+            console.error('Invalid data received from admin:', data);
+            socket.emit('error', { message: 'Invalid test data' });
+        }
+    });
 
   socket.on('testCompleted', async (data) => {
     console.log('Test completed:', data);
@@ -188,13 +180,16 @@ server.on('error', (error) => {
   console.error('Server error:', error);
 });
 
-// Export the server for Vercel
-module.exports = server;
+// Start the server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-// If running directly (not through Vercel), start the server
-if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
   });
-}
+});

@@ -139,12 +139,9 @@
         </table>
     </main>
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io('https://redlabz-typing.vercel.app', {
-            transports: ['polling'],
-            upgrade: false
-        });
+        const socket = io();
 
         function updateLeaderboardTable(leaderboardData) {
             const leaderboardBody = document.querySelector('#leaderboard-table tbody');
