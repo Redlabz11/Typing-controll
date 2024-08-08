@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #connectedUsers {
+            margin-top: 30px;
+        }
+
+        #connectedUsers h2 {
+            text-align: center;
+        }
+
+        #userList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #userList li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        @media (min-width: 600px) {
+
+            input[type="number"],
+            textarea {
+                width: calc(100% - 20px);
+            }
+
+            button {
+                width: calc(100% - 20px);
+            }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            div {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+                max-width: 600px;
+            }
+
+            button {
+                width: 200px;
+                align-self: center;
+            }
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Admin Panel</h1>
+
+        <div>
+            <label for="testDuration">Test Duration (seconds):</label>
+            <input type="number" id="testDuration" value="60">
+        </div>
+
+        <div>
+            <label for="paragraphInput">Test Paragraph:</label>
+            <textarea id="paragraphInput" rows="5" cols="50"></textarea>
+        </div>
+
+        <button id="startTest">Start Test</button>
+
+        <div id="connectedUsers">
+            <h2>Connected Users</h2>
+            <ul id="userList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        document.getElementById('startTest').addEventListener('click', () => {
+            const duration = document.getElementById('testDuration').value;
+            const paragraph = document.getElementById('paragraphInput').value;
+            if (duration && paragraph) {
+                socket.emit('startTest', { duration: parseInt(duration), paragraph });
+                console.log('Sent startTest event:', { duration: parseInt(duration), paragraph });
+            } else {
+                alert('Please enter both duration and paragraph.');
+            }
+        });
+
+        socket.on('updateConnectedUsers', (users) => {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = user;
+                userList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+
+</html>

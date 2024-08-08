@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional Speed Typing Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="logo.png" alt="" />
+                <h1>TypeMaster</h1>
+            </div>
+            <div class="hamburger">
+                <button class="hamburger-menu" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Lessons</a></li>
+                    <li><a href="#">Gujarati Test</a></li>
+                    <li><a href="#">Typing History</a></li>
+                    <li><a href="#">Statistics</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+                <div class="responsive-user-info">
+                    <span>Welcome, User</span>
+                    <a href="#" class="login-btn">Logout</a>
+                </div>
+            </nav>
+            <div class="user-info">
+                <span>Welcome, User</span>
+                <a href="#" class="login-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <main class="typing-area">
+            <header class="test-header">
+                <div class="test-config">
+
+                    <div class="config-item">
+                        <button id="reset-btn" class="reset-btn">
+                            <i class="fas fa-redo-alt"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="word-count">Words: <span id="word-count">0</span></div>
+            </header>
+            <div id="text-display" class="text-display" tabindex="0">
+                <div class="text-content"></div>
+                <div class="cursor"></div>
+            </div>
+            <input type="text" id="user-input" class="user-input" placeholder="Start typing here..." autocomplete="off"
+                spellcheck="false" />
+        </main>
+        <aside class="sidebar">
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="time-left">60</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span id="wpm">0</span> WPM
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span id="errors">0</span> Errors
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span id="incorrect-words">0</span> Incorrect Words
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="correct-words">0</span> Correct Words
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-backspace"></i>
+                    <span id="backspace-count">0</span> Backspaces
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-bullseye"></i>
+                    <span id="accuracy">100</span>% Accuracy
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-font"></i>
+                    <span id="typed-words">0</span> Words
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+
+
+        const textDisplay = document.getElementById("text-display");
+        const userInput = document.getElementById("user-input");
+        const timeLeft = document.getElementById("time-left");
+        const wpmDisplay = document.getElementById("wpm");
+        const errorsDisplay = document.getElementById("errors");
+        const resetBtn = document.getElementById("reset-btn");
+
+        let lastCompletedWordPosition = 0;
+        let timer;
+        let timeRemaining;
+        let currentText = "";
+        let typedCharacters = 0;
+        let errors = 0;
+        let startTime;
+        let currentWordIndex = 0;
+        let isTestActive = false;
+        let backspaceCount = 0;
+        let hasStartedTyping = false;
+        let correctWords = 0;
+        let incorrectWords = 0;
+        let typedWords = 0;
+
+        const socket = io();
+        let testStarted = false;
+
+        console.log('Socket connection established');
+
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('testStarted', (data) => {
+            console.log('Received testStarted event with data:', data);
+            if (data && data.paragraph && data.duration) {
+                testStarted = true;
+                currentText = data.paragraph;
+                timeRemaining = data.duration;
+                initTest();
+                userInput.focus();
+                alert('The test has been started by the admin. Click OK to begin!');
+                startTest(); // Add this line to start the test after the alert
+            } else {
+                console.error('Invalid data received from server:', data);
+                alert('An error occurred while starting the test. Please try again.');
+            }
+        });
+
+        function startTest() {
+            isTestActive = true;
+            startTime = new Date();
+            startTimer();
+            userInput.disabled = false;
+        }
+
+
+
+
+        function initTest() {
+            clearInterval(timer);
+            isTestActive = false;
+            hasStartedTyping = false;
+
+            const textContent = document.createElement("div");
+            textContent.className = "text-content";
+            textContent.innerHTML = currentText
+                .split(" ")
+                .map((word, index) => `<span class="word ${index === 0 ? 'current' : ''}">${word}</span>`)
+                .join(" ");
+
+            textDisplay.innerHTML = "";
+            textDisplay.appendChild(textContent);
+
+            const totalWords = currentText.trim().split(/\s+/).length;
+            window.totalParagraphWords = totalWords;
+
+            document.getElementById("word-count").textContent = totalWords;
+
+            updateTimerDisplay();
+            typedCharacters = 0;
+            errors = 0;
+            currentWordIndex = 0;
+            backspaceCount = 0;
+            correctWords = 0;
+            incorrectWords = 0;
+            typedWords = 0;
+            lastCompletedWordPosition = 0;
+            textDisplay.scrollTop = 0;
+            wpmDisplay.textContent = "0";
+            errorsDisplay.textContent = "0";
+            document.getElementById("backspace-count").textContent = "0";
+            document.getElementById("accuracy").textContent = "0";
+            document.getElementById("correct-words").textContent = "0";
+            document.getElementById("incorrect-words").textContent = "0";
+            document.getElementById("typed-words").textContent = "0";
+
+            userInput.value = "";
+            userInput.focus();
+
+            userInput.disabled = true;
+
+            handleResponsiveLayout();
+        }
+
+        function updateTimerDisplay() {
+            if (timeRemaining >= 3600) {
+                const hours = Math.floor(timeRemaining / 3600);
+                const minutes = Math.floor((timeRemaining % 3600) / 60);
+                const seconds = timeRemaining % 60;
+                timeLeft.textContent = `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+            } else if (timeRemaining >= 60) {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timeLeft.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+            } else {
+                timeLeft.textContent = timeRemaining;
+            }
+        }
+
+        function startTimer() {
+            startTime = new Date();
+            timer = setInterval(() => {
+                if (timeRemaining > 0) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                } else {
+                    endTest();
+                }
+            }, 1000);
+        }
+
+        function calculateAccuracy() {
+            if (typedWords === 0) return 0;
+            const baseAccuracy = (typedWords * 100) / window.totalParagraphWords;
+            const penaltyFactor = (incorrectWords * 50) / typedWords;
+            const accuracy = baseAccuracy - penaltyFactor;
+            return Math.max(0, Math.min(100, Math.round(accuracy)));
+        }
+
+        function updateAccuracyDisplay() {
+            const accuracy = calculateAccuracy();
+            document.getElementById("accuracy").textContent = accuracy;
+        }
+
+        function calculateWPM(startTime, endTime, typedCharacters) {
+            const timeElapsed = (endTime - startTime) / 60000; // Convert to minutes
+            return Math.round((typedCharacters / 5) / timeElapsed);
+        }
+
+        function updateStats() {
+            if (!isTestActive) return;
+            errorsDisplay.textContent = errors;
+            document.getElementById("backspace-count").textContent = backspaceCount;
+            updateAccuracyDisplay();
+            document.getElementById("correct-words").textContent = correctWords;
+            document.getElementById("incorrect-words").textContent = incorrectWords;
+            document.getElementById("typed-words").textContent = typedWords;
+        }
+
+        function showResultPopup(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords) {
+            const modal = document.createElement("div");
+            modal.className = "modal";
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>Test Results</h2>
+                    <p>Words per minute: ${wpm}</p>
+                    <p>Accuracy: ${accuracy}%</p>
+                    <p>Errors: ${errors}</p>
+                    <p>Backspaces: ${backspaces}</p>
+                    <p>Correct Words: ${correctWords}</p>
+                    <p>Incorrect Words: ${incorrectWords}</p>
+                    <p>Typed Words: ${typedWords}</p>
+                    <p>Total Paragraph Words: ${totalWords}</p>
+                    <button id="close-modal">Close</button>
+                    <button id="download-pdf">Download PDF</button>
+                </div>`;
+            document.body.appendChild(modal);
+            modal.style.display = "flex";
+
+            document.getElementById("close-modal").addEventListener("click", () => {
+                modal.style.display = "none";
+                document.body.removeChild(modal);
+            });
+
+            document.getElementById("download-pdf").addEventListener("click", () => {
+                generatePDF(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords);
+            });
+        }
+
+        function generatePDF(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords) {
+            const {
+                jsPDF
+            } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Set font styles
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80); // Dark blue color
+
+            // Add title
+            doc.text("Typing Test Results", 105, 20, null, null, "center");
+
+            // Add user information
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(52, 73, 94); // Slightly lighter blue
+
+
+            doc.text(`Test Date: ${new Date().toLocaleString()}`, 20, 60);
+
+            // Add horizontal line
+            doc.setDrawColor(189, 195, 199); // Light gray color
+            doc.line(20, 70, 190, 70);
+
+            // Add test statistics
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Test Statistics", 20, 85);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(52, 73, 94);
+
+            const stats = [
+                [`Words per minute: ${wpm}`, `Accuracy: ${accuracy}%`],
+                [`Errors: ${errors}`, `Backspaces: ${backspaces}`],
+                [`Correct Words: ${correctWords}`, `Incorrect Words: ${incorrectWords}`],
+                [`Typed Words: ${typedWords}`, `Total Paragraph Words: ${totalWords}`]
+            ];
+
+            let yPos = 95;
+            stats.forEach(row => {
+                doc.text(row[0], 25, yPos);
+                doc.text(row[1], 105, yPos);
+                yPos += 10;
+            });
+
+            // Add horizontal line
+            doc.setDrawColor(189, 195, 199);
+            doc.line(20, yPos + 5, 190, yPos + 5);
+
+            // Add mini boxes with labels
+            const boxSize = 5;
+            const boxY = yPos + 15;
+
+            // Red mini box for incorrect words
+            doc.setFillColor(231, 76, 60); // Red color
+            doc.rect(20, boxY, boxSize, boxSize, 'F');
+            doc.setTextColor(52, 73, 94); // Dark text color
+            doc.setFontSize(10);
+            doc.text("Incorrect Words", 28, boxY + boxSize / 2);
+
+            // Green mini box for correct words
+            doc.setFillColor(46, 204, 113); // Green color
+            doc.rect(80, boxY, boxSize, boxSize, 'F');
+            doc.text("Correct Words", 88, boxY + boxSize / 2);
+
+            // Black mini box for skipped words
+            doc.setFillColor(0, 0, 0); // Black color
+            doc.rect(140, boxY, boxSize, boxSize, 'F');
+            doc.text("Skipped Words", 148, boxY + boxSize / 2);
+
+            // Add typed paragraph with highlighted errors and underlined skipped words
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Typed Paragraph", 20, boxY + boxSize + 10);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+
+            const words = currentText.split(" ");
+            const inputWords = userInput.value.split(" ");
+            let paragraphYPos = boxY + boxSize + 20;
+            let xPosition = 20;
+            const lineHeight = 5;
+            const maxWidth = 170;
+
+            for (let i = 0; i < words.length; i++) {
+                const correctWord = words[i];
+                const typedWord = inputWords[i] || "";
+
+                if (typedWord === "") {
+                    // Word was skipped, render in black and underline
+                    doc.setTextColor(0, 0, 0);
+                    const wordWidth = doc.getTextWidth(correctWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(correctWord + " ", xPosition, paragraphYPos);
+                    doc.line(xPosition, paragraphYPos + 1, xPosition + wordWidth - 1, paragraphYPos + 1);
+                    xPosition += wordWidth;
+                } else if (typedWord === correctWord) {
+                    doc.setTextColor(46, 204, 113); // Green for correct words
+                    const wordWidth = doc.getTextWidth(typedWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(typedWord + " ", xPosition, paragraphYPos);
+                    xPosition += wordWidth;
+                } else {
+                    doc.setTextColor(231, 76, 60); // Red for incorrect words
+                    const wordWidth = doc.getTextWidth(typedWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(typedWord + " ", xPosition, paragraphYPos);
+                    xPosition += wordWidth;
+                }
+            }
+
+            // Add original paragraph
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Original Paragraph", 20, paragraphYPos + lineHeight * 3);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(52, 73, 94);
+
+            let originalParagraphYPos = paragraphYPos + lineHeight * 4;
+            xPosition = 20;
+
+            const splitText = doc.splitTextToSize(currentText, maxWidth);
+            splitText.forEach(line => {
+                doc.text(line, xPosition, originalParagraphYPos);
+                originalParagraphYPos += lineHeight;
+            });
+
+            // Add footer
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(127, 140, 141);
+            doc.text("Generated by TypeMaster - Improve your typing skills!", 105, 285, null, null, "center");
+
+            // Save the PDF
+            doc.save("typing_test_results.pdf");
+        }
+
+        function endTest() {
+            if (!isTestActive) return;
+            isTestActive = false;
+            clearInterval(timer);
+
+            const endTime = new Date();
+            const finalWpm = calculateWPM(startTime, endTime, typedCharacters);
+            const accuracy = calculateAccuracy();
+
+            wpmDisplay.textContent = finalWpm;
+            document.getElementById("accuracy").textContent = accuracy;
+
+            showResultPopup(
+                finalWpm,
+                errors,
+                backspaceCount,
+                accuracy,
+                correctWords,
+                incorrectWords,
+                typedWords,
+                window.totalParagraphWords
+            );
+
+            userInput.removeEventListener("input", handleKeyDown);
+        }
+
+        function handleKeyDown(e) {
+            if (!testStarted || !isTestActive) {
+                e.preventDefault();
+                return;
+            }
+
+            if (isTestActive && timeRemaining > 0) {
+                const inputValue = e.target.value;
+                const words = currentText.split(" ");
+                const inputWords = inputValue.split(" ");
+                const currentInputWord = inputWords[currentWordIndex];
+                const currentWord = words[currentWordIndex];
+
+                const wordElements = textDisplay.querySelectorAll(".word");
+
+                if (e.inputType === "insertText" && e.data === " ") {
+                    if (currentInputWord === currentWord) {
+                        correctWords++;
+                        wordElements[currentWordIndex].classList.add("correct");
+                    } else {
+                        incorrectWords++;
+                        wordElements[currentWordIndex].classList.add("incorrect");
+                        let wordErrors = 0;
+                        for (let i = 0; i < Math.max(currentWord.length, currentInputWord.length); i++) {
+                            if (currentWord[i] !== currentInputWord[i]) {
+                                wordErrors++;
+                            }
+                        }
+                        errors += wordErrors;
+                    }
+
+                    typedWords++;
+                    typedCharacters += currentInputWord.length + 1;
+
+                    lastCompletedWordPosition = e.target.selectionStart;
+
+                    currentWordIndex++;
+                    if (currentWordIndex < words.length) {
+                        wordElements[currentWordIndex - 1].classList.remove("current");
+                        wordElements[currentWordIndex].classList.add("current");
+
+                        if (isWordNearBottom(wordElements[currentWordIndex])) {
+                            smoothScroll();
+                        }
+                    } else {
+                        endTest();
+                        return;
+                    }
+                } else {
+                    // Handle non-space input (typing within a word)
+                    wordElements[currentWordIndex].classList.remove("correct", "incorrect");
+                    if (currentInputWord === currentWord.slice(0, currentInputWord.length)) {
+                        wordElements[currentWordIndex].classList.add("current");
+                    } else {
+                        wordElements[currentWordIndex].classList.add("current", "error");
+                    }
+                }
+
+                if (e.inputType === "deleteContentBackward") {
+                    backspaceCount++;
+                    if (typedCharacters > 0) typedCharacters--;
+                }
+
+                updateStats();
+            }
+        }
+
+
+        userInput.disabled = true;
+        function isWordNearBottom(wordElement) {
+            const textDisplayRect = textDisplay.getBoundingClientRect();
+            const wordRect = wordElement.getBoundingClientRect();
+
+            const threshold = textDisplayRect.height * 0.8; // 80% of the visible area
+            return wordRect.bottom - textDisplayRect.top > threshold;
+        }
+
+        function smoothScroll() {
+            const scrollAmount = textDisplay.clientHeight * 0.3; // Scroll by 30% of the visible area
+            textDisplay.scrollBy({
+                top: scrollAmount,
+                behavior: "smooth",
+            });
+        }
+
+        function handleResponsiveLayout() {
+            const container = document.querySelector(".container");
+            const typingArea = document.querySelector(".typing-area");
+            const sidebar = document.querySelector(".sidebar");
+
+            if (window.innerWidth <= 1200) {
+                container.style.height = "auto";
+                typingArea.style.height = "auto";
+                sidebar.style.height = "auto";
+            } else {
+                container.style.height = "100vh";
+                typingArea.style.height = "100%";
+                sidebar.style.height = "100vh";
+            }
+        }
+
+        userInput.addEventListener("input", handleKeyDown);
+        userInput.addEventListener("keydown", function (e) {
+            if (!testStarted || !isTestActive) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === "Backspace" && e.target.selectionStart <= lastCompletedWordPosition) {
+                e.preventDefault();
+            }
+        });
+
+
+        resetBtn.addEventListener("click", () => {
+            initTest();
+            userInput.focus();
+        });
+
+
+        window.addEventListener("load", handleResponsiveLayout);
+        window.addEventListener("resize", handleResponsiveLayout);
+
+        document.addEventListener("copy", (e) => {
+            if (isTestActive) {
+                e.preventDefault();
+            }
+        });
+
+        // Initialize the test when the page loads
+
+        initTest();
+
+        // Hamburger menu functionality
+        document.addEventListener("DOMContentLoaded", function () {
+            const hamburger = document.querySelector(".hamburger-menu");
+            const nav = document.querySelector(".main-header nav");
+
+            hamburger.addEventListener("click", function () {
+                hamburger.classList.toggle("open");
+                nav.classList.toggle("open");
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener("click", function (event) {
+                const isClickInsideNav = nav.contains(event.target);
+                const isClickOnHamburger = hamburger.contains(event.target);
+
+                if (
+                    !isClickInsideNav &&
+                    !isClickOnHamburger &&
+                    nav.classList.contains("open")
+                ) {
+                    nav.classList.remove("open");
+                    hamburger.classList.remove("open");
+                }
+            });
+
+            // Close menu when window is resized to larger than mobile breakpoint
+            window.addEventListener("resize", function () {
+                if (window.innerWidth > 768) {
+                    nav.classList.remove("open");
+                    hamburger.classList.remove("open");
+                }
+            });
+        });
+
+    </script>
+</body>
+
+</html>

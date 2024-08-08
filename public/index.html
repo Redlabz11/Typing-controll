@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional Speed Typing Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Source+Code+Pro&display=swap");
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f0f3f5;
+            --text-color: #34495e;
+            --error-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Roboto", sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-header {
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .main-header nav {
+            display: flex;
+            align-items: center;
+        }
+
+        .main-header nav ul {
+            list-style-type: none;
+            display: flex;
+            gap: 1.5rem;
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-header nav a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .main-header nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .login-btn {
+            display: inline-block;
+            text-decoration: none;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info span {
+            font-weight: 500;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .typing-area {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #time-input {
+            width: 70px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        #time-unit {
+            margin-left: 0.5rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+        }
+
+        .test-config {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .config-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        select,
+        input[type="checkbox"] {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .text-display {
+            position: relative;
+            text-align: left;
+            font-family: "Montserrat", sans-serif;
+            font-size: 1.2rem;
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            outline: none;
+            line-height: 1.8;
+            max-height: 45vh;
+        }
+
+        .word-count {
+            position: absolute;
+            top: 180px;
+            /* Adjust as needed */
+            right: 440px;
+            background-color: var(--background-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .text-content {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .text-content p {
+            margin-bottom: 1.5em;
+            text-indent: 0;
+        }
+
+        .cursor {
+            position: absolute;
+            width: 2px;
+            height: 1.5em;
+            background-color: var(--primary-color);
+            animation: blink 0.7s infinite;
+        }
+
+        .user-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.2rem;
+            font-family: "Montserrat", sans-serif;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            margin-top: 1rem;
+            background-color: #fff;
+        }
+
+        .user-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .text-content span {
+            position: relative;
+        }
+
+        .text-content span.correct {
+            color: green;
+        }
+
+        .text-content span.incorrect {
+            color: var(--error-color);
+            text-decoration: underline;
+        }
+
+        .reset-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .reset-btn:hover {
+            background-color: #2980b9;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .reset-btn i {
+            margin-right: 5px;
+            font-size: 0.9rem;
+        }
+
+        .reset-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar {
+            width: 400px;
+            background-color: #fff;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 70px);
+            /* Subtract header height */
+            overflow: hidden;
+            /* Hide overflow */
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 1rem;
+            background-color: var(--background-color);
+            border-radius: 5px;
+        }
+
+        .stat-item i {
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+        }
+
+        .history-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .history-panel h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+        }
+
+        #history-list {
+            list-style-type: none;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 10px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #history-list li {
+            background-color: var(--background-color);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        /* Add custom scrollbar styles for webkit browsers */
+        #history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #history-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #history-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #history-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .modal-content p {
+            margin: 10px 0;
+        }
+
+        #close-modal {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #download-pdf {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #leaderboard-link {
+            text-decoration: none;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #guj-type {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #guj-type:hover {
+            background-color: #2980b9;
+        }
+
+        #download-pdf:hover {
+            background-color: #2980b9;
+        }
+
+        #close-modal:hover {
+            background-color: #2980b9;
+        }
+
+        #statsChart {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Slider Toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary-color);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .hamburger-menu {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 2rem;
+            height: 2rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 10;
+        }
+
+        .hamburger-menu span {
+            width: 2rem;
+            height: 0.25rem;
+            background: var(--text-color);
+            border-radius: 10px;
+            transition: all 0.3s linear;
+            position: relative;
+            transform-origin: 1px;
+        }
+
+        .hamburger-menu.open span:first-child {
+            transform: rotate(45deg);
+        }
+
+        .hamburger-menu.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-menu.open span:nth-child(3) {
+            transform: rotate(-45deg);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .responsive-user-info {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .responsive-user-info span {
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                overflow-y: visible;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 50vh;
+            }
+
+            .typing-area {
+                height: auto;
+                min-height: 60vh;
+            }
+
+            body {
+                overflow-y: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+
+            .header-content {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .logo {
+                flex: 1;
+            }
+
+            .main-header nav {
+                margin: 1rem 0;
+            }
+
+            .login-btn {
+                margin-top: 1rem;
+            }
+
+            .typing-area {
+                padding: 1rem;
+            }
+
+            .text-display {
+                font-size: 1rem;
+                padding: 1rem;
+            }
+
+            .test-config {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .config-item {
+                width: 100%;
+            }
+
+            .sidebar {
+                max-height: none;
+            }
+
+            .history-panel {
+                max-height: 30vh;
+            }
+
+            .stats-panel {
+                flex-direction: row;
+                grid-template-rows: 2fr;
+            }
+
+            .stat-item {
+                font-size: 1rem;
+                padding: 0.5rem;
+            }
+
+            .hamburger-menu {
+                display: flex;
+            }
+
+            .main-header nav {
+                position: fixed;
+                top: 0;
+                right: -300px;
+                height: 100vh;
+                width: 300px;
+                background-color: #fff;
+                box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s ease-in-out;
+                flex-direction: column;
+                justify-content: flex-start;
+                padding-top: 60px;
+            }
+
+            .main-header nav.open {
+                transform: translateX(-300px);
+            }
+
+            .main-header nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .main-header nav ul li {
+                margin: 1rem 0;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .responsive-user-info {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                height: auto;
+            }
+
+            .typing-area,
+            .sidebar {
+                max-height: none;
+            }
+
+            .text-display {
+                max-height: 40vh;
+            }
+
+            .typing-area {
+                padding: 0.5rem;
+            }
+
+            .text-display {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+
+            .reset-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .reset-btn i {
+                font-size: 1rem;
+            }
+
+            .sidebar {
+                padding: 1rem;
+            }
+
+            .main-header {
+                padding: 1rem;
+            }
+
+            .main-header nav ul {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .main-header {
+                padding: 0.5rem;
+            }
+
+            .logo img {
+                height: 30px;
+            }
+
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+
+            .main-header nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .login-btn {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .typing-area {
+                padding: 0.5rem;
+            }
+
+            .text-display {
+                font-size: 0.8rem;
+                padding: 0.5rem;
+            }
+
+            .reset-btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            .reset-btn i {
+                font-size: 0.9rem;
+            }
+
+            .stat-item {
+                font-size: 0.9rem;
+                padding: 0.4rem;
+            }
+
+            .history-panel h2 {
+                font-size: 1.1rem;
+            }
+
+            #history-list li {
+                font-size: 0.8rem;
+                padding: 0.8rem;
+            }
+        }
+
+        .word {
+            display: inline-block;
+            margin-right: 0.3em;
+        }
+
+        .word.current {
+            background-color: #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .word.correct {
+            color: #4caf50;
+        }
+
+        .word.incorrect {
+            color: #f44336;
+        }
+
+        /* .word.error {
+            text-decoration: underline wavy #f44336;
+        } */
+    </style>
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="logo.png" alt="" />
+                <h1>TypeMaster</h1>
+            </div>
+            <div class="hamburger">
+                <button class="hamburger-menu" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Lessons</a></li>
+                    <li><a href="#">Gujarati Test</a></li>
+                    <li><a href="#">Typing History</a></li>
+                    <li><a href="#">Statistics</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+                <div class="responsive-user-info">
+                    <span>Welcome, User</span>
+                    <a href="#" class="login-btn" onclick="logout()">Logout</a>
+                </div>
+            </nav>
+            <div class="user-info">
+                <span>Welcome, User</span>
+                <a href="#" class="login-btn" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <main class="typing-area">
+            <header class="test-header">
+                <div class="test-config">
+
+                    <div class="config-item">
+                        <button id="reset-btn" class="reset-btn">
+                            <i class="fas fa-redo-alt"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="word-count">Words: <span id="word-count">0</span></div>
+            </header>
+            <div id="text-display" class="text-display" tabindex="0">
+                <div class="text-content"></div>
+                <div class="cursor"></div>
+            </div>
+            <input type="text" id="user-input" class="user-input" placeholder="Start typing here..." autocomplete="off"
+                spellcheck="false" />
+        </main>
+        <aside class="sidebar">
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="time-left">60</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span id="wpm">0</span> WPM
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span id="errors">0</span> Errors
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span id="incorrect-words">0</span> Incorrect Words
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="correct-words">0</span> Correct Words
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-backspace"></i>
+                    <span id="backspace-count">0</span> Backspaces
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-bullseye"></i>
+                    <span id="accuracy">100</span>% Accuracy
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-font"></i>
+                    <span id="typed-words">0</span> Words
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+
+
+        const textDisplay = document.getElementById("text-display");
+        const userInput = document.getElementById("user-input");
+        const timeLeft = document.getElementById("time-left");
+        const wpmDisplay = document.getElementById("wpm");
+        const errorsDisplay = document.getElementById("errors");
+        const resetBtn = document.getElementById("reset-btn");
+
+        let lastCompletedWordPosition = 0;
+        let timer;
+        let timeRemaining;
+        let currentText = "";
+        let typedCharacters = 0;
+        let errors = 0;
+        let startTime;
+        let currentWordIndex = 0;
+        let isTestActive = false;
+        let backspaceCount = 0;
+        let hasStartedTyping = false;
+        let correctWords = 0;
+        let incorrectWords = 0;
+        let typedWords = 0;
+
+        const socket = io();
+        let testStarted = false;
+
+        console.log('Socket connection established');
+        socket.on('leaderboardUpdate', (leaderboardData) => {
+            // Update the leaderboard display with the new data
+            updateLeaderboardDisplay(leaderboardData);
+        });
+
+        function updateLeaderboardDisplay(leaderboardData) {
+            const leaderboardElement = document.getElementById('leaderboard');
+            if (leaderboardElement) {
+                leaderboardElement.innerHTML = ''; // Clear existing data
+                leaderboardData.forEach((entry, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${entry.username}</td>
+                <td>${entry.max_wpm}</td>
+                <td>${parseFloat(entry.avg_accuracy).toFixed(2)}%</td>
+                <td>${entry.tests_taken}</td>
+            `;
+                    leaderboardElement.appendChild(row);
+                });
+            }
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('testStarted', (data) => {
+            console.log('Received testStarted event with data:', data);
+            if (data && data.paragraph && data.duration) {
+                testStarted = true;
+                currentText = data.paragraph;
+                timeRemaining = data.duration;
+                initTest();
+                userInput.focus();
+                alert('The test has been started by the admin. Click OK to begin!');
+                startTest(); // Add this line to start the test after the alert
+            } else {
+                console.error('Invalid data received from server:', data);
+                alert('An error occurred while starting the test. Please try again.');
+            }
+        });
+
+        function startTest() {
+            isTestActive = true;
+            startTime = new Date();
+            startTimer();
+            userInput.disabled = false;
+        }
+
+        function sendTestResults() {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const testData = {
+                    username: username,
+                    wpm: parseInt(document.getElementById('wpm').textContent),
+                    errors: parseInt(document.getElementById('errors').textContent),
+                    incorrectWords: parseInt(document.getElementById('incorrect-words').textContent),
+                    correctWords: parseInt(document.getElementById('correct-words').textContent),
+                    backspaceCount: parseInt(document.getElementById('backspace-count').textContent),
+                    accuracy: parseFloat(document.getElementById('accuracy').textContent),
+                    typedWords: parseInt(document.getElementById('typed-words').textContent),
+                    testDuration: 60 - parseInt(document.getElementById('time-left').textContent)
+                };
+
+                socket.emit('testCompleted', testData);
+                socket.emit('requestLeaderboard'); // Add this line to request updated leaderboard data
+            }
+        }
+        socket.on('requestLeaderboard', async () => {
+            await updateLeaderboard();
+        });
+        // When the test ends
+
+
+        function requestInitialLeaderboardData() {
+            socket.emit('requestLeaderboard');
+        }
+
+        function initTest() {
+            clearInterval(timer);
+            isTestActive = false;
+            hasStartedTyping = false;
+
+            const textContent = document.createElement("div");
+            textContent.className = "text-content";
+            textContent.innerHTML = currentText
+                .split(" ")
+                .map((word, index) => `<span class="word ${index === 0 ? 'current' : ''}">${word}</span>`)
+                .join(" ");
+
+            textDisplay.innerHTML = "";
+            textDisplay.appendChild(textContent);
+
+            const totalWords = currentText.trim().split(/\s+/).length;
+            window.totalParagraphWords = totalWords;
+
+            document.getElementById("word-count").textContent = totalWords;
+
+            updateTimerDisplay();
+            typedCharacters = 0;
+            errors = 0;
+            currentWordIndex = 0;
+            backspaceCount = 0;
+            correctWords = 0;
+            incorrectWords = 0;
+            typedWords = 0;
+            lastCompletedWordPosition = 0;
+            textDisplay.scrollTop = 0;
+            wpmDisplay.textContent = "0";
+            errorsDisplay.textContent = "0";
+            document.getElementById("backspace-count").textContent = "0";
+            document.getElementById("accuracy").textContent = "0";
+            document.getElementById("correct-words").textContent = "0";
+            document.getElementById("incorrect-words").textContent = "0";
+            document.getElementById("typed-words").textContent = "0";
+
+            userInput.value = "";
+            userInput.focus();
+
+            userInput.disabled = true;
+
+            handleResponsiveLayout();
+        }
+
+        function updateTimerDisplay() {
+            if (timeRemaining >= 3600) {
+                const hours = Math.floor(timeRemaining / 3600);
+                const minutes = Math.floor((timeRemaining % 3600) / 60);
+                const seconds = timeRemaining % 60;
+                timeLeft.textContent = `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+            } else if (timeRemaining >= 60) {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timeLeft.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+            } else {
+                timeLeft.textContent = timeRemaining;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            let username = localStorage.getItem('username');
+            if (!username) {
+                username = prompt('Please enter your username:');
+                if (username) {
+                    localStorage.setItem('username', username);
+                }
+            }
+            if (username) {
+                document.querySelector('.user-info').innerHTML = `Welcome, ${username} <a href="#" class="login-btn" onclick="logout()">Logout</a>`;
+
+                // Emit userJoined event
+                socket.emit('userJoined', username);
+            }
+
+            requestInitialLeaderboardData();
+        });
+
+
+
+        function startTimer() {
+            startTime = new Date();
+            timer = setInterval(() => {
+                if (timeRemaining > 0) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                } else {
+                    endTest();
+                }
+            }, 1000);
+        }
+
+        function calculateAccuracy() {
+            if (typedWords === 0) return 0;
+            const baseAccuracy = (correctWords * 100) / window.totalParagraphWords;
+            const penaltyFactor = (incorrectWords * 50) / typedWords;
+            const accuracy = baseAccuracy - penaltyFactor;
+            return Math.max(0, Math.min(100, Math.round(accuracy)));
+        }
+
+        function updateAccuracyDisplay() {
+            const accuracy = calculateAccuracy();
+            document.getElementById("accuracy").textContent = accuracy;
+        }
+
+        function calculateWPM(startTime, endTime, typedCharacters) {
+            const timeElapsed = (endTime - startTime) / 60000; // Convert to minutes
+            return Math.round((typedCharacters / 5) / timeElapsed);
+        }
+
+        function updateStats() {
+            if (!isTestActive) return;
+            errorsDisplay.textContent = errors;
+            document.getElementById("backspace-count").textContent = backspaceCount;
+            updateAccuracyDisplay();
+            document.getElementById("correct-words").textContent = correctWords;
+            document.getElementById("incorrect-words").textContent = incorrectWords;
+            document.getElementById("typed-words").textContent = typedWords;
+        }
+        function logout() {
+            const username = localStorage.getItem('username');
+            if (username) {
+                socket.emit('userLogout', { username: username });
+                localStorage.removeItem('username');
+                location.reload();
+            }
+        }
+        function showResultPopup(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords) {
+            const modal = document.createElement("div");
+            modal.className = "modal";
+            modal.innerHTML = `
+        <div class="modal-content">
+            <h2>Test Results</h2>
+            <p>Words per minute: ${wpm}</p>
+            <p>Accuracy: ${accuracy}%</p>
+            <p>Errors: ${errors}</p>
+            <p>Backspaces: ${backspaces}</p>
+            <p>Correct Words: ${correctWords}</p>
+            <p>Incorrect Words: ${incorrectWords}</p>
+            <p>Typed Words: ${typedWords}</p>
+            <p>Total Paragraph Words: ${totalWords}</p>
+            <button id="close-modal">Close</button>
+            <button id="download-pdf">Download PDF</button>
+            <a id="leaderboard-link" href="/leaderboard" target="_blank">View Leaderboard</a>
+        </div>`;
+            document.body.appendChild(modal);
+            modal.style.display = "flex";
+
+            document.getElementById("close-modal").addEventListener("click", () => {
+                modal.style.display = "none";
+                document.body.removeChild(modal);
+            });
+
+            document.getElementById("download-pdf").addEventListener("click", () => {
+                generatePDF(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords);
+            });
+        }
+        function generatePDF(wpm, errors, backspaces, accuracy, correctWords, incorrectWords, typedWords, totalWords) {
+            const {
+                jsPDF
+            } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Set font styles
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80); // Dark blue color
+
+            // Add title
+            doc.text("Typing Test Results", 105, 20, null, null, "center");
+
+            // Add user information
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(52, 73, 94); // Slightly lighter blue
+
+
+            doc.text(`Test Date: ${new Date().toLocaleString()}`, 20, 60);
+
+            // Add horizontal line
+            doc.setDrawColor(189, 195, 199); // Light gray color
+            doc.line(20, 70, 190, 70);
+
+            // Add test statistics
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Test Statistics", 20, 85);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(52, 73, 94);
+
+            const stats = [
+                [`Words per minute: ${wpm}`, `Accuracy: ${accuracy}%`],
+                [`Errors: ${errors}`, `Backspaces: ${backspaces}`],
+                [`Correct Words: ${correctWords}`, `Incorrect Words: ${incorrectWords}`],
+                [`Typed Words: ${typedWords}`, `Total Paragraph Words: ${totalWords}`]
+            ];
+
+            let yPos = 95;
+            stats.forEach(row => {
+                doc.text(row[0], 25, yPos);
+                doc.text(row[1], 105, yPos);
+                yPos += 10;
+            });
+
+            // Add horizontal line
+            doc.setDrawColor(189, 195, 199);
+            doc.line(20, yPos + 5, 190, yPos + 5);
+
+            // Add mini boxes with labels
+            const boxSize = 5;
+            const boxY = yPos + 15;
+
+            // Red mini box for incorrect words
+            doc.setFillColor(231, 76, 60); // Red color
+            doc.rect(20, boxY, boxSize, boxSize, 'F');
+            doc.setTextColor(52, 73, 94); // Dark text color
+            doc.setFontSize(10);
+            doc.text("Incorrect Words", 28, boxY + boxSize / 2);
+
+            // Green mini box for correct words
+            doc.setFillColor(46, 204, 113); // Green color
+            doc.rect(80, boxY, boxSize, boxSize, 'F');
+            doc.text("Correct Words", 88, boxY + boxSize / 2);
+
+            // Black mini box for skipped words
+            doc.setFillColor(0, 0, 0); // Black color
+            doc.rect(140, boxY, boxSize, boxSize, 'F');
+            doc.text("Skipped Words", 148, boxY + boxSize / 2);
+
+            // Add typed paragraph with highlighted errors and underlined skipped words
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Typed Paragraph", 20, boxY + boxSize + 10);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+
+            const words = currentText.split(" ");
+            const inputWords = userInput.value.split(" ");
+            let paragraphYPos = boxY + boxSize + 20;
+            let xPosition = 20;
+            const lineHeight = 5;
+            const maxWidth = 170;
+
+            for (let i = 0; i < words.length; i++) {
+                const correctWord = words[i];
+                const typedWord = inputWords[i] || "";
+
+                if (typedWord === "") {
+                    // Word was skipped, render in black and underline
+                    doc.setTextColor(0, 0, 0);
+                    const wordWidth = doc.getTextWidth(correctWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(correctWord + " ", xPosition, paragraphYPos);
+                    doc.line(xPosition, paragraphYPos + 1, xPosition + wordWidth - 1, paragraphYPos + 1);
+                    xPosition += wordWidth;
+                } else if (typedWord === correctWord) {
+                    doc.setTextColor(46, 204, 113); // Green for correct words
+                    const wordWidth = doc.getTextWidth(typedWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(typedWord + " ", xPosition, paragraphYPos);
+                    xPosition += wordWidth;
+                } else {
+                    doc.setTextColor(231, 76, 60); // Red for incorrect words
+                    const wordWidth = doc.getTextWidth(typedWord + " ");
+
+                    if (xPosition + wordWidth > 20 + maxWidth) {
+                        paragraphYPos += lineHeight;
+                        xPosition = 20;
+                    }
+
+                    doc.text(typedWord + " ", xPosition, paragraphYPos);
+                    xPosition += wordWidth;
+                }
+            }
+
+            // Add original paragraph
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Original Paragraph", 20, paragraphYPos + lineHeight * 3);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(52, 73, 94);
+
+            let originalParagraphYPos = paragraphYPos + lineHeight * 4;
+            xPosition = 20;
+
+            const splitText = doc.splitTextToSize(currentText, maxWidth);
+            splitText.forEach(line => {
+                doc.text(line, xPosition, originalParagraphYPos);
+                originalParagraphYPos += lineHeight;
+            });
+
+            // Add footer
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(127, 140, 141);
+            doc.text("Generated by TypeMaster - Improve your typing skills!", 105, 285, null, null, "center");
+
+            // Save the PDF
+            doc.save("typing_test_results.pdf");
+        }
+
+        function endTest() {
+            if (!isTestActive) return;
+            isTestActive = false;
+            clearInterval(timer);
+
+            const endTime = new Date();
+            const finalWpm = calculateWPM(startTime, endTime, typedCharacters);
+            const accuracy = calculateAccuracy();
+
+            wpmDisplay.textContent = finalWpm;
+            document.getElementById("accuracy").textContent = accuracy;
+
+            showResultPopup(
+                finalWpm,
+                errors,
+                backspaceCount,
+                accuracy,
+                correctWords,
+                incorrectWords,
+                typedWords,
+                window.totalParagraphWords
+            );
+
+            userInput.removeEventListener("input", handleKeyDown);
+            sendTestResults();
+        }
+
+        function handleKeyDown(e) {
+            if (!testStarted || !isTestActive) {
+                e.preventDefault();
+                return;
+            }
+
+            if (isTestActive && timeRemaining > 0) {
+                const inputValue = e.target.value;
+                const words = currentText.split(" ");
+                const inputWords = inputValue.split(" ");
+                const currentInputWord = inputWords[currentWordIndex];
+                const currentWord = words[currentWordIndex];
+
+                const wordElements = textDisplay.querySelectorAll(".word");
+
+                if (e.inputType === "insertText" && e.data === " ") {
+                    if (currentInputWord === currentWord) {
+                        correctWords++;
+                        wordElements[currentWordIndex].classList.add("correct");
+                    } else {
+                        incorrectWords++;
+                        wordElements[currentWordIndex].classList.add("incorrect");
+                        let wordErrors = 0;
+                        for (let i = 0; i < Math.max(currentWord.length, currentInputWord.length); i++) {
+                            if (currentWord[i] !== currentInputWord[i]) {
+                                wordErrors++;
+                            }
+                        }
+                        errors += wordErrors;
+                    }
+
+                    typedWords++;
+                    typedCharacters += currentInputWord.length + 1;
+
+                    lastCompletedWordPosition = e.target.selectionStart;
+
+                    currentWordIndex++;
+                    if (currentWordIndex < words.length) {
+                        wordElements[currentWordIndex - 1].classList.remove("current");
+                        wordElements[currentWordIndex].classList.add("current");
+
+                        if (isWordNearBottom(wordElements[currentWordIndex])) {
+                            smoothScroll();
+                        }
+                    } else {
+                        endTest();
+                        return;
+                    }
+                } else {
+                    // Handle non-space input (typing within a word)
+                    wordElements[currentWordIndex].classList.remove("correct", "incorrect");
+                    if (currentInputWord === currentWord.slice(0, currentInputWord.length)) {
+                        wordElements[currentWordIndex].classList.add("current");
+                    } else {
+                        wordElements[currentWordIndex].classList.add("current", "error");
+                    }
+                }
+
+                if (e.inputType === "deleteContentBackward") {
+                    backspaceCount++;
+                    if (typedCharacters > 0) typedCharacters--;
+                }
+
+                updateStats();
+            }
+        }
+
+
+        userInput.disabled = true;
+        function isWordNearBottom(wordElement) {
+            const textDisplayRect = textDisplay.getBoundingClientRect();
+            const wordRect = wordElement.getBoundingClientRect();
+
+            const threshold = textDisplayRect.height * 0.8; // 80% of the visible area
+            return wordRect.bottom - textDisplayRect.top > threshold;
+        }
+
+        function smoothScroll() {
+            const scrollAmount = textDisplay.clientHeight * 0.3; // Scroll by 30% of the visible area
+            textDisplay.scrollBy({
+                top: scrollAmount,
+                behavior: "smooth",
+            });
+        }
+
+        function handleResponsiveLayout() {
+            const container = document.querySelector(".container");
+            const typingArea = document.querySelector(".typing-area");
+            const sidebar = document.querySelector(".sidebar");
+
+            if (window.innerWidth <= 1200) {
+                container.style.height = "auto";
+                typingArea.style.height = "auto";
+                sidebar.style.height = "auto";
+            } else {
+                container.style.height = "100vh";
+                typingArea.style.height = "100%";
+                sidebar.style.height = "100vh";
+            }
+        }
+
+        userInput.addEventListener("input", handleKeyDown);
+        userInput.addEventListener("keydown", function (e) {
+            if (!testStarted || !isTestActive) {
+                e.preventDefault();
+                return;
+            }
+
+            if (e.key === "Backspace" && e.target.selectionStart <= lastCompletedWordPosition) {
+                e.preventDefault();
+            }
+        });
+
+
+        resetBtn.addEventListener("click", () => {
+            initTest();
+            userInput.focus();
+        });
+
+
+        window.addEventListener("load", handleResponsiveLayout);
+        window.addEventListener("resize", handleResponsiveLayout);
+
+        document.addEventListener("copy", (e) => {
+            if (isTestActive) {
+                e.preventDefault();
+            }
+        });
+
+        // Initialize the test when the page loads
+
+        initTest();
+
+        // Hamburger menu functionality
+        document.addEventListener("DOMContentLoaded", function () {
+            const hamburger = document.querySelector(".hamburger-menu");
+            const nav = document.querySelector(".main-header nav");
+
+            hamburger.addEventListener("click", function () {
+                hamburger.classList.toggle("open");
+                nav.classList.toggle("open");
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener("click", function (event) {
+                const isClickInsideNav = nav.contains(event.target);
+                const isClickOnHamburger = hamburger.contains(event.target);
+
+                if (
+                    !isClickInsideNav &&
+                    !isClickOnHamburger &&
+                    nav.classList.contains("open")
+                ) {
+                    nav.classList.remove("open");
+                    hamburger.classList.remove("open");
+                }
+            });
+
+            // Close menu when window is resized to larger than mobile breakpoint
+            window.addEventListener("resize", function () {
+                if (window.innerWidth > 768) {
+                    nav.classList.remove("open");
+                    hamburger.classList.remove("open");
+                }
+            });
+        });
+
+    </script>
+</body>
+
+</html>

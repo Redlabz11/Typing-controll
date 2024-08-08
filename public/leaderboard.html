@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TypeMaster Leaderboard</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --background-color: #f0f3f5;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .main-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .leaderboard-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #e9f2f9;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>TypeMaster</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/leaderboard">Leaderboard</a></li>
+                    <!-- Add other navigation items as needed -->
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="leaderboard-container">
+        <h2>Leaderboard</h2>
+        <table id="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Username</th>
+                    <th>Max WPM</th>
+                    <th>Avg Accuracy</th>
+                    <th>Tests Taken</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Leaderboard data will be inserted here dynamically -->
+            </tbody>
+        </table>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function updateLeaderboardTable(leaderboardData) {
+            const leaderboardBody = document.querySelector('#leaderboard-table tbody');
+            leaderboardBody.innerHTML = ''; // Clear existing data
+
+            leaderboardData.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${entry.username}</td>
+                    <td>${entry.max_wpm}</td>
+                    <td>${parseFloat(entry.avg_accuracy).toFixed(2)}%</td>
+                    <td>${entry.tests_taken}</td>
+                `;
+                leaderboardBody.appendChild(row);
+            });
+        }
+
+        function fetchLeaderboardData() {
+            fetch('/api/leaderboard')
+                .then(response => response.json())
+                .then(data => {
+                    updateLeaderboardTable(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching leaderboard data:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchLeaderboardData(); // Fetch data on initial load
+            socket.emit('requestLeaderboard'); // Request real-time updates
+        });
+
+        socket.on('leaderboardUpdate', (leaderboardData) => {
+            updateLeaderboardTable(leaderboardData);
+        });
+    </script>
+</body>
+
+</html>
