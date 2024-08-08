@@ -141,7 +141,9 @@
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        const socket = io();
+        const socket = io('https://your-vercel-domain.vercel.app', {
+            transports: ['websocket', 'polling']
+        });
 
         function updateLeaderboardTable(leaderboardData) {
             const leaderboardBody = document.querySelector('#leaderboard-table tbody');

@@ -131,7 +131,9 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io('https://your-vercel-domain.vercel.app', {
+            transports: ['websocket', 'polling']
+        });
 
         document.getElementById('startTest').addEventListener('click', () => {
             const duration = document.getElementById('testDuration').value;
