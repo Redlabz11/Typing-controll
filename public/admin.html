@@ -132,7 +132,8 @@
 
     <script>
         const socket = io('https://redlabz-typing.vercel.app', {
-            transports: ['websocket', 'polling']
+            transports: ['polling'],
+            upgrade: false
         });
 
         document.getElementById('startTest').addEventListener('click', () => {

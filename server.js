@@ -3,14 +3,25 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { Pool } = require('pg');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
+
+// Enable CORS for all routes
+app.use(cors());
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  },
+  transports: ['polling', 'websocket']
 });
 
 // PostgreSQL connection
@@ -39,14 +50,6 @@ pool.query(`
 app.use((req, res, next) => {
   console.log(`Request received: ${req.method} ${req.url}`);
   next();
-});
-
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve Socket.IO client library
-app.get('/socket.io/socket.io.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'node_modules', 'socket.io', 'client-dist', 'socket.io.js'));
 });
 
 // Routes
@@ -101,18 +104,18 @@ io.on('connection', (socket) => {
   });
 
  socket.on('startTest', (data) => {
-        console.log('Received startTest event with data:', data);
-        if (data && data.paragraph && data.duration) {
-            console.log('Emitting testStarted event with data:', data);
-            io.emit('testStarted', {
-                paragraph: data.paragraph,
-                duration: parseInt(data.duration)
-            });
-        } else {
-            console.error('Invalid data received from admin:', data);
-            socket.emit('error', { message: 'Invalid test data' });
-        }
-    });
+    console.log('Received startTest event with data:', data);
+    if (data && data.paragraph && data.duration) {
+        console.log('Emitting testStarted event with data:', data);
+        io.emit('testStarted', {
+            paragraph: data.paragraph,
+            duration: parseInt(data.duration)
+        });
+    } else {
+        console.error('Invalid data received from admin:', data);
+        socket.emit('error', { message: 'Invalid test data' });
+    }
+ });
 
   socket.on('testCompleted', async (data) => {
     console.log('Test completed:', data);

@@ -944,7 +944,8 @@
         let typedWords = 0;
 
         const socket = io('https://redlabz-typing.vercel.app', {
-            transports: ['websocket', 'polling']
+            transports: ['polling'],
+            upgrade: false
         });
         let testStarted = false;
 
