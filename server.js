@@ -15,7 +15,7 @@ const io = socketIo(server, {
 
 // PostgreSQL connection
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:ZokvN2OwM5HD@ep-autumn-scene-a1izhr9p.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:ZokvN2OwM5HD@ep-autumn-scene-a1izhr9p.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 });
 
 // Create table if not exists
@@ -180,16 +180,13 @@ server.on('error', (error) => {
   console.error('Server error:', error);
 });
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Export the app for Vercel
+module.exports = app;
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
+// If running directly (not through Vercel), start the server
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
-});
+}
